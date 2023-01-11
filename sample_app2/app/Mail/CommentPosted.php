@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Mail;
+
+use App\Models\Comment;
+use App\Models\User;
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+use Illuminate\Support\Facades\Mail;
+
+class CommentPosted extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    public $user;
+    public $comment;
+
+    public function __construct(User $user, Comment $comment)
+    {
+        $this->user = $user;
+        $this->comment = $comment;
+    }
+
+    public function build()
+    {
+        return $this
+            ->subject('コメントありがとうございます')
+            ->view('emails.comments.posted');
+    }
+
+
+    public function create(Request $request)
+    {
+        $user = Auth::user();
+        $comment = new Comment(['body' => $request->comment]);
+
+        $user->comments()->save($comment);
+
+        // 追加
+        Mail::to($user)->send(new CommentPosted($user, $comment));
+
+        return redirect()->route('comment.thanks');
+    }
+}
